@@ -8,3 +8,8 @@ variable "subnets_count" {
   type        = number
   description = "The number of subnets to create"
 }
+
+variable "vpc_cidr" {
+  type        = string
+  description = "The CIDR block for the VPC"
+}
