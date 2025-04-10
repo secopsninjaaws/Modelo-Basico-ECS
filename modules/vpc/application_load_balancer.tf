@@ -1,8 +1,9 @@
 resource "aws_alb" "main" {
-  name               = "${var.project_name}-alb"
+  count              = var.alb_internal == "false" ? 1 : 0
+  name               = "${var.project_name}-public-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.main.id]
+  security_groups    = [aws_security_group.main[0].id]
   subnets            = element(["${aws_subnet.public_subnets[*].id}"], var.subnets_count)
 
   enable_deletion_protection = false
@@ -13,7 +14,8 @@ resource "aws_alb" "main" {
 }
 
 resource "aws_alb_listener" "listiner_80" {
-  load_balancer_arn = aws_alb.main.arn
+  count             = var.alb_internal == "false" ? 1 : 0
+  load_balancer_arn = aws_alb.main[0].arn
   port              = 80
   protocol          = "HTTP"
 
@@ -32,7 +34,8 @@ resource "aws_alb_listener" "listiner_80" {
 ##################################################### Security Group #####################################################
 
 resource "aws_security_group" "main" {
-  name        = "${var.project_name}-alb-sg"
+  count       = var.alb_internal == "false" ? 1 : 0
+  name        = "${var.project_name}-alb-internal-sg"
   vpc_id      = aws_vpc.main.id
   description = "Security group for ALB"
 
@@ -40,20 +43,22 @@ resource "aws_security_group" "main" {
 }
 
 resource "aws_security_group_rule" "rule_http" {
+  count             = var.alb_internal == "false" ? 1 : 0
   type              = "ingress"
   from_port         = 80
   to_port           = 80
   protocol          = "TCP"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.main.id
+  security_group_id = aws_security_group.main[0].id
   description       = "Allow HTTP traffic"
 }
 resource "aws_security_group_rule" "rule_egress" {
+  count             = var.alb_internal == "false" ? 1 : 0
   type              = "egress"
   from_port         = 0
   to_port           = 0
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.main.id
+  security_group_id = aws_security_group.main[0].id
   description       = "Allow all outbound traffic"
 }

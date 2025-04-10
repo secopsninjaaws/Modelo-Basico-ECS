@@ -3,7 +3,7 @@ data "aws_availability_zones" "available_zones" {}
 
 
 resource "aws_vpc" "main" {
-  cidr_block           = var.vpc_cidr
+  cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
   enable_dns_support   = true
   tags = {
@@ -38,6 +38,9 @@ resource "aws_route_table" "public_route_table" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
   }
+  depends_on = [
+    aws_route_table.public_route_table
+  ]
 }
 
 resource "aws_route_table_association" "public_subnets_association" {
@@ -64,6 +67,7 @@ resource "aws_nat_gateway" "nat_gateway" {
   tags = {
     Name = "${var.project_name}-nat-gateway"
   }
+  depends_on = [aws_eip.eip]
 }
 
 resource "aws_eip" "eip" {

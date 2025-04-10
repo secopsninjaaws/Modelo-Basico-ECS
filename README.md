@@ -1,184 +1,119 @@
-# Arquitetura de Containers na AWS
+# 🚀 Arquitetura de Containers na AWS
 
-Este projeto implementa uma infraestrutura na AWS para suportar uma arquitetura de containers, utilizando Terraform para provisionamento.
+Este projeto implementa uma infraestrutura moderna na AWS para suportar uma arquitetura de containers, utilizando Terraform para provisionamento. A arquitetura é projetada para ser altamente disponível, segura e escalável.
 
-## Estrutura do Projeto
+## 📁 Estrutura do Projeto
 
 ```
 .
 ├── modules/
-│   ├── vpc/
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   └── ecs/
-│       ├── main.tf
-│       ├── variables.tf
-│       └── outputs.tf
-├── app/
-│   ├── Dockerfile
-│   └── index.html
-├── infra.tf
-├── variables.tf
-└── terraform.tfvars
+│   ├── vpc/          # Módulo de rede
+│   └── ecs/          # Módulo de orquestração de containers
+├── app/              # Aplicação de teste containerizada
+├── infra.tf          # Configuração principal
+├── variables.tf      # Variáveis globais
+└── terraform.tfvars  # Valores das variáveis
 ```
 
-## Módulos
+## 🏗️ Módulos
 
-### VPC
-O módulo VPC cria uma infraestrutura de rede completa com:
-- VPC com suporte a DNS
-- Subnets públicas e privadas distribuídas em múltiplas AZs
-- Internet Gateway para acesso à internet
-- NAT Gateway para subnets privadas
-- Route tables configuradas para roteamento adequado
+### 🌐 VPC (Virtual Private Cloud)
+O módulo VPC implementa uma rede isolada e segura com:
 
-### ECS (Elastic Container Service)
-O módulo ECS implementa um ambiente completo para execução de containers com:
-- Cluster ECS configurado
-- Auto Scaling Groups para os nós do cluster
-- Security Groups para controle de acesso
-- IAM roles e policies necessárias
-- Integração com o módulo VPC para networking
-- ECR (Elastic Container Registry) para armazenamento das imagens Docker
+#### Recursos Principais
+- **VPC** com suporte a DNS
+- **Subnets** distribuídas em múltiplas AZs
+  - Subnets públicas para recursos com acesso à internet
+  - Subnets privadas para recursos internos
+- **Internet Gateway** para acesso à internet
+- **NAT Gateway** para subnets privadas
+- **Route Tables** configuradas para roteamento adequado
 
-## Aplicação de Teste
+#### Segurança
+- Isolamento de rede
+- Controle de tráfego entre subnets
+- Proteção contra acesso não autorizado
 
-A pasta `app/` contém uma aplicação simples de teste que foi containerizada e subida para o ECR:
+### 🐳 ECS (Elastic Container Service)
+O módulo ECS implementa um ambiente completo para execução de containers:
 
-### Estrutura da Aplicação
-- `Dockerfile`: Define a imagem base (nginx) e copia o arquivo index.html
-- `index.html`: Página HTML simples para teste
+#### Recursos Principais
+- **Cluster ECS** configurado
+- **Auto Scaling Groups** para os nós do cluster
+- **Security Groups** para controle de acesso
+- **IAM roles e policies** necessárias
+- **ECR** para armazenamento das imagens Docker
 
-### Build e Push da Imagem
-Para construir e enviar a imagem para o ECR:
+#### Características
+- Alta disponibilidade
+- Escalabilidade automática
+- Integração com o módulo VPC
+- Logs centralizados no CloudWatch
 
-1. Autentique-se no ECR:
-```bash
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 123456789012.dkr.ecr.us-east-1.amazonaws.com
-```
+## ⚙️ Configuração
 
-2. Construa a imagem:
-```bash
-docker build -t minha-app:latest ./app
-```
+### 📋 Variáveis
 
-3. Tag da imagem para o ECR:
-```bash
-docker tag minha-app:latest 123456789012.dkr.ecr.us-east-1.amazonaws.com/minha-app:latest
-```
+| Variável | Tipo | Descrição | Padrão |
+|----------|------|-----------|--------|
+| `project_name` | string | Nome do projeto | - |
+| `subnets_count` | number | Número de subnets | - |
+| `ecs_cluster_name` | string | Nome do cluster ECS | - |
 
-4. Push para o ECR:
-```bash
-docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/minha-app:latest
-```
+### 🚀 Exemplo de Uso
 
-## Configuração
-
-### Variáveis
-
-| Nome | Tipo | Descrição | Padrão |
-|------|------|-----------|--------|
-| project_name | string | Nome do projeto | - |
-| subnets_count | number | Número de subnets públicas/privadas a serem criadas | - |
-| ecs_cluster_name | string | Nome do cluster ECS | - |
-
-### Exemplo de Uso
-
-1. Configure as variáveis no arquivo `terraform.tfvars`:
+1. **Configure as variáveis** no arquivo `terraform.tfvars`:
 ```hcl
 project_name = "meu-projeto"
 subnets_count = 3
 ecs_cluster_name = "meu-cluster"
 ```
 
-2. Utilizando o modulo vpc
-
-```
-module "vpc" {
-  source        = "./modules/vpc"
-  project_name  = var.project_name
-  subnets_count = var.subnets_count
-}
+2. **Inicialize o Terraform**:
+```bash
+terraform init
 ```
 
-3. Utilizando o modulo ecs
+3. **Aplique a configuração**:
+```bash
+terraform apply
 ```
-locals {
-  services = {
-    ################################################ Service Configuration ################################################
-    "service1" = {
-      service_name          = "service1"
-      service_cpu           = 256
-      service_memory        = 512
-      service_desired_count = 2
-      service_max_count     = 5
-      service_min_count     = 1
-      service_port          = 80
-      vpc_id                = module.vpc.vpc_id
-      private_subnets       = module.vpc.private_subnet_ids
-      alb_listener_arn      = module.vpc.listiner_arn
-      host_name             = "service1.dev.selectsolucoes.com"
 
-      ############# HEALTH CHECK
-      path_health_check = {
-        healthy_threshold   = 2
-        interval            = 30
-        timeout             = 15
-        unhealthy_threshold = 2
-        path                = "/"
-        port                = 80
-        protocol            = "HTTP"
-        matcher             = "200-399"
-      }
-      ############ SECURITY GROUPS 
-      security_group_rules = {
-        HTTPS = {
-          type        = "ingress"
-          from_port   = 443
-          to_port     = 443
-          protocol    = "tcp"
-          cidr_blocks = ["0.0.0.0/0"]
-        }
-        HTTP = {
-          type        = "ingress"
-          from_port   = 80
-          to_port     = 80
-          protocol    = "tcp"
-          cidr_blocks = ["0.0.0.0/0"]
-        }
-      }
-    }
-    ################################################ Service Configuration ################################################
-  }
-}
+## 🔒 Segurança
 
-module "service" {
-  source   = "./modules/ecs"
-  for_each = local.services
+### 🔐 VPC
+- Subnets privadas sem acesso direto à internet
+- Acesso à internet via NAT Gateway
+- Controle de tráfego entre subnets
 
-  service_name          = each.value.service_name
-  service_cpu           = each.value.service_cpu
-  service_memory        = each.value.service_memory
-  service_desired_count = each.value.service_desired_count
-  service_max_count     = each.value.service_max_count
-  service_min_count     = each.value.service_min_count
-  service_port          = each.value.service_port
-  project_name          = var.project_name
-  vpc_id                = each.value.vpc_id
-  private_subnets       = each.value.private_subnets
-  alb_listener_arn      = each.value.alb_listener_arn
-  security_group_rules = {
-    for k, v in each.value.security_group_rules : k => {
-      type        = v.type
-      from_port   = v.from_port
-      to_port     = v.to_port
-      protocol    = v.protocol
-      cidr_blocks = v.cidr_blocks
-    }
-  }
-  host_name = each.value.host_name
+### 🛡️ ECS
+- Instâncias em subnets privadas
+- Security Groups restritivos
+- IAM com princípio de menor privilégio
+- Logs centralizados
 
-}
+## 🛠️ Manutenção
 
+### 🔄 Atualização
+```bash
+terraform plan
+terraform apply
 ```
+
+### 🗑️ Destruição
+```bash
+terraform destroy
+```
+
+## 📋 Requisitos
+
+- Terraform >= 1.0.0
+- AWS CLI configurado
+- Credenciais AWS válidas
+- Docker (para build/push de imagens)
+
+## 📝 Notas
+
+- A arquitetura é projetada para alta disponibilidade
+- Todos os recursos são provisionados de forma idempotente
+- As configurações seguem as melhores práticas da AWS
