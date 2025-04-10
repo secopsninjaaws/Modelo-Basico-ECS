@@ -1,30 +1,31 @@
 # 🐳 Módulo ECS
 
-Este módulo implementa um cluster ECS (Elastic Container Service) completo na AWS, incluindo recursos necessários para execução de containers de forma escalável e segura.
+Este módulo implementa um serviço ECS (Elastic Container Service) completo na AWS, incluindo recursos necessários para execução de containers de forma escalável e segura.
 
 ## 📋 Visão Geral
 
 O módulo ECS cria um ambiente completo para execução de containers, incluindo:
-- Cluster ECS com Fargate
-- Application Load Balancer (ALB)
+- ECS (Elasctic Container Service)
 - ECR (Elastic Container Registry)
 - Security Groups
 - CloudWatch Log Group
 
+E alguns recursos opcionais para ajustes como:
+- dynamic blocks para efs se necessário
+- listines públicos e privados para se necessário ajusta no serviço
+
 ## 🏗️ Recursos Criados
 
-### ECS Cluster
-- Cluster Fargate
-- Capacity Provider configurado
-- Tags personalizadas por projeto
-- Integração com CloudWatch
+### ECS (Elastic Container Service)
 
-### Application Load Balancer (ALB)
-- Balanceamento de carga HTTP/HTTPS
-- Listener na porta 80
-- Target Group configurado
-- Health checks habilitados
-- Tags personalizadas por projeto
+- Subnets privadas
+- Configuração do Target Group
+- Configuração do Listiner no ALB público ou privado
+- circuit breaker habilitado
+- Scale configurado para permitir ajustes finos
+- Healthy check implementando também permitir ajustes de acordo com cada cenário
+- Regras de security groups criado iterando sobre um map de objetos, possibilitando a criação de múltiplas regras
+- task role e task execution role permitir serem ajustas.
 
 ### ECR (Elastic Container Registry)
 - Repositório privado

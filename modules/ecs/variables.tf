@@ -293,9 +293,9 @@ variable "alb_internal" {
 variable "efs_volumes" {
   description = "Volumes EFS para o ECS"
   type = list(object({
-    name            = string
-    file_system_id  = string
-    root_directory  = string
+    name               = string
+    file_system_id     = string
+    root_directory     = string
     transit_encryption = bool
   }))
   default = []

@@ -17,4 +17,5 @@ resource "aws_ecs_cluster_capacity_providers" "example" {
     weight            = 100
     capacity_provider = "FARGATE"
   }
+
 }

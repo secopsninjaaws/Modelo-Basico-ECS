@@ -14,10 +14,6 @@ resource "aws_ecs_service" "main" {
     container_name   = "${var.service_name}-container"
     container_port   = var.service_port
   }
-
-  tags = {
-    Name = "${var.service_name}-service"
-  }
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
 
@@ -41,7 +37,9 @@ resource "aws_ecs_service" "main" {
     ]
   }
 
-  
+  tags = {
+    Name = "${var.service_name}-service"
+  }
 
 }
 

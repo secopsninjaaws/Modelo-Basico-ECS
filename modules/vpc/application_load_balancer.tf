@@ -10,6 +10,9 @@ resource "aws_alb" "main" {
   enable_http2               = true
   enable_waf_fail_open       = false
 
+  tags = {
+    Name = "${var.project_name}-public-alb"
+  }
 
 }
 

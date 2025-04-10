@@ -84,11 +84,14 @@ graph TD
 
 ```hcl
 module "vpc" {
-  source = "./modules/vpc"
-  
-  project_name = "meu-projeto"
-  subnets_count = 3
+  source        = "./modules/vpc"
+  project_name  = var.project_name
+  subnets_count = var.subnets_count
+  vpc_cidr      = var.vpc_cidr
+  cluster_name  = var.cluster_name
+  alb_internal  = false
 }
+
 ```
 
 ## 📝 Outputs
@@ -101,7 +104,8 @@ module "vpc" {
 | `nat_gateway_id` | ID do NAT Gateway |
 | `public_route_table_id` | ID da Route Table pública |
 | `private_route_table_id` | ID da Route Table privada |
-
+| `public_listiner_arn` | The ARN of the load balancer listiner_80 |
+| `internal_listiner_arn` | The ARN of the load balancer internal_listiner_80 |
 ## 🛠️ Manutenção
 
 ### Atualização

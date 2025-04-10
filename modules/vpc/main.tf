@@ -41,6 +41,9 @@ resource "aws_route_table" "public_route_table" {
   depends_on = [
     aws_route_table.public_route_table
   ]
+  tags = {
+    Name = "${var.project_name}-public-route-table"
+  }
 }
 
 resource "aws_route_table_association" "public_subnets_association" {
@@ -82,6 +85,9 @@ resource "aws_route_table" "private_route_table" {
   route {
     cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.nat_gateway.id
+  }
+  tags = {
+    Name = "${var.project_name}-private-route-table"
   }
 }
 
