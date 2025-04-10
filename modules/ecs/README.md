@@ -45,14 +45,22 @@ O módulo ECS cria um ambiente completo para execução de containers, incluindo
 
 ## ⚙️ Variáveis
 
-| Nome | Tipo | Descrição | Padrão | Obrigatório |
-|------|------|-----------|--------|------------|
-| `project_name` | string | Nome do projeto | - | Sim |
-| `ecs_cluster_name` | string | Nome do cluster ECS | - | Sim |
-| `ecs_min_size` | number | Número mínimo de instâncias | 1 | Não |
-| `ecs_max_size` | number | Número máximo de instâncias | 3 | Não |
-| `ecs_desired_capacity` | number | Capacidade desejada | 2 | Não |
 
+| Nome                      | Descrição                                         | Tipo     | Obrigatório |
+|---------------------------|--------------------------------------------------|----------|-------------|
+| `alb_internal`            | Define se o ALB será interno (`true`) ou público (`false`) | `bool`   | Sim         |
+| `service_name`            | Nome do serviço ECS                              | `string` | Sim         |
+| `cluster_name`            | Nome do cluster ECS                              | `string` | Sim         |
+| `service_cpu`             | vCPU alocada para o container                    | `number` | Sim         |
+| `service_memory`          | Memória alocada para o container (MB)            | `number` | Sim         |
+| `service_port`            | Porta exposta pelo container                     | `number` | Sim         |
+| `ecr_image_tag`           | Tag da imagem a ser usada                        | `string` | Sim         |
+| `project_name`            | Nome do projeto                                  | `string` | Sim         |
+| `vpc_id`                  | ID da VPC                                        | `string` | Sim         |
+| `private_subnets`         | Lista de subnets privadas                        | `list`   | Sim         |
+| `listiner_arn`            | ARN do listener ALB                              | `string` | Sim         |
+| `host_name`               | Nome DNS do serviço (para regra no listener)     | `string` | Sim         |
+| `capacity_provider_strategy` | Estratégia FARGATE/FARGATE_SPOT               | `list`   | Sim         |
 ## 🔒 Segurança
 
 ### Isolamento de Recursos
@@ -123,3 +131,203 @@ terraform destroy
 - O ALB é criado em subnets públicas
 - O ECR é configurado com lifecycle policy para limpeza automática
 - Os logs são retidos por 30 dias por padrão
+
+## 🧪 Exemplo de Uso
+
+### 🔓 Serviço Público
+
+```hcl
+module "service1" {
+  source = "./modules/ecs"
+
+  # Container configuration
+  alb_internal    = false
+  service_name    = "service1"
+  cluster_name    = module.vpc.cluster_name
+  service_cpu     = 256
+  service_memory  = 512
+  service_port    = 80
+  ecr_image_tag   = "latest"
+  project_name    = var.project_name
+  vpc_id          = module.vpc.vpc_id
+  private_subnets = module.vpc.private_subnet_ids
+  listiner_arn    = module.vpc.public_listiner_arn
+  host_name       = "service1.dev.selectsolucoes.com"
+
+
+  # Capacity provider strategy
+  capacity_provider_strategy = [
+    {
+      capacity_provider = "FARGATE"
+      weight            = 70
+    },
+    {
+      capacity_provider = "FARGATE_SPOT"
+      weight            = 50
+    }
+  ]
+
+
+
+
+  # Scaler configuration
+  # CPU - APENAS ALTERE SE NECESSÁRIO 
+  scale_type            = "StepScaling"
+  service_desired_count = 1
+  service_min_count     = 1
+  service_max_count     = 5
+  # UP
+  scale_out_cpu_threshold       = 70
+  scale_out_adjustment          = 1
+  scale_out_comparison_operator = "GreaterThanOrEqualToThreshold"
+  scale_out_period              = 60
+  scale_out_evaluation_periods  = 1
+  scale_out_cooldown            = 120
+  scale_out_statistic           = "Average"
+  # DOWN
+  scale_in_cpu_threshold       = 60
+  scale_in_adjustment          = -1
+  scale_in_comparison_operator = "LessThanOrEqualToThreshold"
+  scale_in_period              = 60
+  scale_in_evaluation_periods  = 1
+  scale_in_cooldown            = 60
+  scale_in_statistic           = "Average"
+
+
+
+
+
+
+  #  Health check configuration
+
+  path_health_check = {
+    healthy_threshold   = 2
+    interval            = 30
+    timeout             = 15
+    unhealthy_threshold = 2
+    path                = "/"
+    port                = 80
+    protocol            = "HTTP"
+    matcher             = "200-399"
+  }
+  #  Security group rules configuration
+
+  security_group_rules = {
+    HTTPS = {
+      type        = "ingress"
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+    HTTP = {
+      type        = "ingress"
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+
+  depends_on = [module.vpc]
+}
+```
+### 🔓 Serviço Privado
+
+
+```hcl
+module "service1" {
+  source = "./modules/ecs"
+
+  # Container configuration
+  alb_internal    = true # alterando para privado
+  service_name    = "service1"
+  cluster_name    = module.vpc.cluster_name
+  service_cpu     = 256
+  service_memory  = 512
+  service_port    = 80
+  ecr_image_tag   = "latest"
+  project_name    = var.project_name
+  vpc_id          = module.vpc.vpc_id
+  private_subnets = module.vpc.private_subnet_ids
+  listiner_arn    = module.vpc.private_listiner_arn # alterado para o listiner privado
+  host_name       = "service1.dev.selectsolucoes.com"
+
+
+  # Capacity provider strategy
+  capacity_provider_strategy = [
+    {
+      capacity_provider = "FARGATE"
+      weight            = 70
+    },
+    {
+      capacity_provider = "FARGATE_SPOT"
+      weight            = 50
+    }
+  ]
+
+
+
+
+  # Scaler configuration
+  # CPU - APENAS ALTERE SE NECESSÁRIO 
+  scale_type            = "StepScaling"
+  service_desired_count = 1
+  service_min_count     = 1
+  service_max_count     = 5
+  # UP
+  scale_out_cpu_threshold       = 70
+  scale_out_adjustment          = 1
+  scale_out_comparison_operator = "GreaterThanOrEqualToThreshold"
+  scale_out_period              = 60
+  scale_out_evaluation_periods  = 1
+  scale_out_cooldown            = 120
+  scale_out_statistic           = "Average"
+  # DOWN
+  scale_in_cpu_threshold       = 60
+  scale_in_adjustment          = -1
+  scale_in_comparison_operator = "LessThanOrEqualToThreshold"
+  scale_in_period              = 60
+  scale_in_evaluation_periods  = 1
+  scale_in_cooldown            = 60
+  scale_in_statistic           = "Average"
+
+
+
+
+
+
+  #  Health check configuration
+
+  path_health_check = {
+    healthy_threshold   = 2
+    interval            = 30
+    timeout             = 15
+    unhealthy_threshold = 2
+    path                = "/"
+    port                = 80
+    protocol            = "HTTP"
+    matcher             = "200-399"
+  }
+  #  Security group rules configuration
+
+  security_group_rules = {
+    HTTPS = {
+      type        = "ingress"
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+    HTTP = {
+      type        = "ingress"
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+
+  depends_on = [module.vpc]
+}
+```
